@@ -40,3 +40,12 @@ def test_sin_cos():
     zs = theano_to_sympy(zt)
     m = shape_and_dtype_map(zt)
     assert sympy_to_theano(sympy.simplify(zs), m) == 1
+
+def test_gammaln():
+    zt = tt.gammaln(xt)
+    zs = theano_to_sympy(zt)
+    m = shape_and_dtype_map(zt)
+    assert str(zs) == "log(Abs(gamma(x)))", zs
+    assert str(sympy.simplify(zs)) == "log(Abs(x!/x))"
+#    assert sympy_to_theano(zs, m) == 1
+#    assert sympy_to_theano(sympy.simplify(zs), m) == 1
