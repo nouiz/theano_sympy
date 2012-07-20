@@ -1,6 +1,7 @@
 from graph_translation import *
 
 # SETUP
+wt = theano.tensor.scalar('w')
 xt = theano.tensor.scalar('x')
 yt = theano.tensor.scalar('y')
 zt = theano.tensor.add(xt, yt)
@@ -35,11 +36,13 @@ def test_sympy_to_theano():
     assert theano_eq(sympy_to_theano(xs, m), xt)
     assert theano_eq(sympy_to_theano(zs, m), zt)
 
+
 def test_sin_cos():
-    zt = tt.cos(xt)**2 + tt.sin(xt)**2
+    zt = tt.cos(xt) ** 2 + tt.sin(xt) ** 2
     zs = theano_to_sympy(zt)
     m = shape_and_dtype_map(zt)
     assert sympy_to_theano(sympy.simplify(zs), m) == 1
+
 
 def test_gammaln():
     zt = tt.gammaln(xt)
@@ -49,3 +52,22 @@ def test_gammaln():
     assert str(sympy.simplify(zs)) == "log(Abs(x!/x))"
 #    assert sympy_to_theano(zs, m) == 1
 #    assert sympy_to_theano(sympy.simplify(zs), m) == 1
+
+
+def test_theano_to_sympy_inputs():
+    at = wt + xt
+    bt = at + yt
+    assert theano_to_sympy(bt, [at, yt]) == sympy.Symbol(var_string(at)) + ys
+
+
+def test_theano_to_theano_inputs():
+    at = wt + xt
+    bt = at + yt
+    zs = theano_to_sympy(bt, [at, yt])
+#    m = shape_and_dtype_map(bt)
+    inputs_map = {var_string(at): at, var_string(yt): yt}
+    zt = sympy_to_theano(zs, {}, inputs_map)
+    s1 = theano.printing.pprint(zt)
+    s2 = theano.printing.pprint(bt)
+    s3 = theano.printing.pprint(yt + at)
+    assert s1 == s2 or s1 == s3

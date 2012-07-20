@@ -65,7 +65,20 @@ mapping = {sympy.Add: theano.tensor.add,
 
 rev_mapping = dict([(v, k) for k, v in mapping.iteritems()])
 
-def theano_to_sympy(g):
+
+def var_string(var):
+    if var.name:
+        return var.name
+    else:
+        return "theano_var_%d" % id(var)
+
+def theano_to_sympy(g, inputs=None):
+    if inputs is None:
+        inputs = theano.gof.graph.inputs([g])
+    return theano_to_sympy_impl(g, inputs)
+
+
+def theano_to_sympy_impl(g, inputs):
     """ g is a theano graph"""
     assert isinstance(g, (tt.TensorVariable,
                           tt.TensorConstant)), type(g)
@@ -74,28 +87,31 @@ def theano_to_sympy(g):
         # The sum transform the 0d ndarray to a numpy scalar
         # sympy don't accept ndarray
         return g.data.sum()
-    elif not g.owner:
-        assert g.name
-        assert g.ndim == 0
-        return sympy.Symbol(g.name)
-    #elif g.owner.op == theano.tensor.add:
-    #    return sympy.Add(*map(transform, g.owner.inputs))
+    elif g in inputs:
+        return sympy.Symbol(var_string(g))
     elif g.owner.op in rev_mapping:
-        return rev_mapping[g.owner.op](*map(theano_to_sympy, g.owner.inputs))
+        return rev_mapping[g.owner.op](*[theano_to_sympy_impl(var, inputs)
+                                         for var in g.owner.inputs])
+    else:
+        raise Exception("...")
 
 def shape_and_dtype_map(g):
-    return {var.name : (var.dtype, var.broadcastable)
+    return {var.name: (var.dtype, var.broadcastable)
                for var in theano.gof.graph.inputs([g])
                if isinstance(var, tt.TensorVariable)}
 
+
 #In sympy 2 var with the same name are the same variable
-def sympy_to_theano(g, var_map):
+def sympy_to_theano(g, var_map, inputs_map={}):
     assert isinstance(g, sympy.Expr)
     if isinstance(g, sympy.Symbol):
-        dtype, broadcastable = var_map[g.name]
-        return tt.TensorType(dtype, broadcastable)(g.name)
+        if g.name in inputs_map:
+            return inputs_map[g.name]
+        else:
+            dtype, broadcastable = var_map[g.name]
+            return tt.TensorType(dtype, broadcastable)(g.name)
     elif isinstance(g, sympy.Number):
         return eval(str(g))
     else:
-        return mapping[g.__class__](*[sympy_to_theano(arg, var_map)
+        return mapping[g.__class__](*[sympy_to_theano(arg, var_map, inputs_map)
                                             for arg in g.args])
