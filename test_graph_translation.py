@@ -74,3 +74,23 @@ def test_theano_to_theano_inputs():
     s2 = theano.printing.pprint(bt)
     s3 = theano.printing.pprint(yt + at)
     assert s1 == s2 or s1 == s3
+
+
+def test_theano_sympy_optimizer():
+    zt = tt.cos(xt) ** 2 + tt.sin(xt) ** 2
+    mode = theano.compile.mode.get_default_mode()
+    mode = mode.including('sympy')
+    f = theano.function([xt], zt, mode=mode)
+    # The graph is just a deep copy of the constant.
+    assert len(f.maker.fgraph.toposort()) == 1
+    assert isinstance(f.maker.fgraph.toposort()[0].op,
+                      theano.compile.DeepCopyOp)
+
+    # Test that we don't crash when we can't use SymPy
+    # to optimize the graph.
+    zt = tt.cos(xt.dimshuffle('x')) ** 2 + tt.sin(xt) ** 2
+    mode = theano.compile.mode.get_default_mode()
+    mode = mode.including('sympy')
+    f = theano.function([xt], zt, mode=mode)
+    assert any(isinstance(node.op, theano.tensor.Elemwise)
+               for node in f.maker.fgraph.toposort())
