@@ -10,6 +10,7 @@ xs = sympy.Symbol('x')
 ys = sympy.Symbol('y')
 zs = sympy.Add(xs, ys)
 
+
 def test_theano_to_sympy():
 
     assert theano_to_sympy(xt) == xs
@@ -20,6 +21,8 @@ def test_theano_to_sympy():
     var_map = {xs.name: ('float32', (False, False)),
                ys.name: ('float32', (False, False)),
            }
+
+
 def test_shape_and_dtype_map():
     assert shape_and_dtype_map(xt) == {'x': ('float64', ())}
     assert shape_and_dtype_map(zt) == {'x': ('float64', ()),
@@ -27,9 +30,9 @@ def test_shape_and_dtype_map():
     assert shape_and_dtype_map(tt.matrix('name')) == \
             {'name': ('float64', (False, False))}
 
+
 def test_sympy_to_theano():
     m = shape_and_dtype_map(zt)
-
     def theano_eq(a,b):
         return a.type == b.type and a.name == b.name
 

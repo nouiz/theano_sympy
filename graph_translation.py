@@ -72,6 +72,7 @@ def var_string(var):
     else:
         return "theano_var_%d" % id(var)
 
+
 def theano_to_sympy(g, inputs=None):
     if inputs is None:
         inputs = theano.gof.graph.inputs([g])
@@ -94,6 +95,7 @@ def theano_to_sympy_impl(g, inputs):
                                          for var in g.owner.inputs])
     else:
         raise Exception("...")
+
 
 def shape_and_dtype_map(g):
     return {var.name: (var.dtype, var.broadcastable)
